@@ -1,5 +1,29 @@
 const appUrl = process.env.P16_TEST_URL || "http://127.0.0.1:8765/";
 const debuggingUrl = process.env.P16_CDP_URL || "http://127.0.0.1:9223";
+const rootUrl = new URL("/", appUrl).href;
+const russianUrl = new URL("/ru/", appUrl).href;
+
+const [englishHtml, russianHtml, robots, sitemap] = await Promise.all([
+  fetch(rootUrl).then(response => response.text()),
+  fetch(russianUrl).then(response => response.text()),
+  fetch(new URL("/robots.txt", appUrl)).then(response => response.text()),
+  fetch(new URL("/sitemap.xml", appUrl)).then(response => response.text())
+]);
+
+if (!englishHtml.includes('<link rel="canonical" href="https://p16-labels-constructor.pages.dev/">') ||
+    !englishHtml.includes('hreflang="ru"') ||
+    !englishHtml.includes('type="application/ld+json"') ||
+    !englishHtml.includes("Printable labels for Behringer P16 personal mixers")) {
+  throw new Error("English SEO metadata or visible content is incomplete");
+}
+if (!russianHtml.includes('<html lang="ru" data-page-language="ru">') ||
+    !russianHtml.includes('<link rel="canonical" href="https://p16-labels-constructor.pages.dev/ru/">') ||
+    !russianHtml.includes("Печатные подписи для персональных микшеров Behringer P16")) {
+  throw new Error("Russian indexable page is incomplete");
+}
+if (!robots.includes("User-agent: *") || !robots.includes("Sitemap: https://p16-labels-constructor.pages.dev/sitemap.xml")) throw new Error("robots.txt is invalid");
+if (!sitemap.includes("<urlset") || !sitemap.includes("https://p16-labels-constructor.pages.dev/ru/")) throw new Error("sitemap.xml is invalid");
+
 const targets = await fetch(`${debuggingUrl}/json/list`).then(response => response.json());
 const target = targets.find(item => item.type === "page" && item.url === appUrl);
 if (!target?.webSocketDebuggerUrl) throw new Error("Chrome debugging target was not found");
@@ -37,6 +61,7 @@ async function evaluate(expression, awaitPromise = false) {
 }
 
 await command("Runtime.enable");
+await command("Page.enable");
 await command("Emulation.setDeviceMetricsOverride", { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false });
 
 await evaluate(`(() => {
@@ -58,6 +83,9 @@ const initial = await evaluate(`({
   hasGeometryChoice: Boolean(document.querySelector('#consoleModel')),
   builtinIcons: document.querySelectorAll('#builtinIcons .icon-choice').length,
   sheetSize: [getComputedStyle(document.querySelector('.sheet')).width, getComputedStyle(document.querySelector('.sheet')).height],
+  canonical: document.querySelector('link[rel="canonical"]').href,
+  description: document.querySelector('meta[name="description"]').content,
+  about: document.querySelector('#aboutHeading').textContent,
   strip: (() => {
     const svg = document.querySelector('.label-strip');
     const crop = document.querySelector('.crop-layer');
@@ -76,8 +104,9 @@ const initial = await evaluate(`({
   })()
 })`);
 
-if (initial.title !== "P16 Label Desk") throw new Error("Unexpected page title");
+if (initial.title !== "Behringer P16-M / P16-HQ Label Strip Designer | P16 Label Desk") throw new Error("Unexpected page title");
 if (initial.language !== "en" || initial.saveProject !== "Save project" || initial.openProject !== "Open project") throw new Error("English is not the default interface language");
+if (initial.canonical !== "https://p16-labels-constructor.pages.dev/" || !initial.description.includes("P16-M") || !initial.about.includes("Behringer P16")) throw new Error("Rendered SEO content is incorrect");
 if (!initial.versionedAssets) throw new Error("Local assets are not cache-busted");
 if (initial.strips !== 8 || initial.svgLabels !== 8) throw new Error("A4 preview must contain eight strips");
 if (initial.selected !== "VOC1") throw new Error("Default project did not load");
@@ -94,7 +123,7 @@ const russian = await evaluate(`(() => {
     language: document.documentElement.lang,
     saveProject: document.querySelector('#exportJson').textContent,
     openProject: document.querySelector('label[for="importJson"]').textContent,
-    channels: document.querySelector('.channel-section h1').textContent,
+    channels: document.querySelector('.channel-section h2').textContent,
     selectedRange: document.querySelector('#selectedRange').textContent,
     stored: localStorage.getItem('p16-label-desk-language'),
     headerFits: document.querySelector('.topbar').scrollWidth <= document.querySelector('.topbar').clientWidth
@@ -115,7 +144,7 @@ const english = await evaluate(`(() => {
   document.querySelector('[data-language="en"]').click();
   return {
     language: document.documentElement.lang,
-    channels: document.querySelector('.channel-section h1').textContent,
+    channels: document.querySelector('.channel-section h2').textContent,
     selectedRange: document.querySelector('#selectedRange').textContent,
     stored: localStorage.getItem('p16-label-desk-language')
   };
@@ -183,5 +212,20 @@ const print = await evaluate(`({
 })`);
 if (print.topbar !== "none" || print.sheetDisplay !== "block" || print.sheetOverflow !== "hidden" || Number(print.sheetZoom) !== 1 || print.stripMarginBottom === "0px") throw new Error("Print stylesheet failed");
 
-console.log(JSON.stringify({ initial, russian, persistedLanguage, english, interaction, importedProject, search, print }, null, 2));
+await command("Emulation.setEmulatedMedia", { media: "screen" });
+await command("Page.navigate", { url: russianUrl });
+await new Promise(resolve => setTimeout(resolve, 700));
+const russianPage = await evaluate(`({
+  language: document.documentElement.lang,
+  pageLanguage: document.documentElement.dataset.pageLanguage,
+  title: document.title,
+  saveProject: document.querySelector('#exportJson').textContent,
+  canonical: document.querySelector('link[rel="canonical"]').href,
+  about: document.querySelector('#aboutHeading').textContent
+})`);
+if (russianPage.language !== "ru" || russianPage.pageLanguage !== "ru" || russianPage.saveProject !== "Сохранить проект" || russianPage.canonical !== "https://p16-labels-constructor.pages.dev/ru/" || !russianPage.about.includes("Behringer P16")) throw new Error("Russian page runtime failed");
+
+await command("Page.navigate", { url: appUrl });
+await new Promise(resolve => setTimeout(resolve, 500));
+console.log(JSON.stringify({ initial, russian, persistedLanguage, english, interaction, importedProject, search, print, russianPage }, null, 2));
 socket.close();

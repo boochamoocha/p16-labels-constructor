@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://p16-labels-constructor.pages.dev/sitemap.xml

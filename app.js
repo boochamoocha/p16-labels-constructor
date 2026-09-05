@@ -104,6 +104,14 @@ const TRANSLATIONS = {
     "geometry.summary": "{width} × {height} mm · channel {channel} mm · group gap {gap} mm",
     "preview.heading": "A4 sheet · landscape",
     "preview.description": "{model} · {width} × {height} mm label · print at actual size",
+    "about.heading": "Printable labels for Behringer P16 personal mixers",
+    "about.intro": "Create a 227 × 18 mm channel label strip for Behringer P16-M and P16-HQ personal monitor mixers. Add names, captions, icons and colors, then export SVG or print up to eight strips on one A4 sheet.",
+    "about.stepOne": "Choose a channel and enter its name.",
+    "about.stepTwo": "Pick an icon, color and layout.",
+    "about.stepThree": "Print at 100% / Actual size and verify the 50 mm ruler.",
+    "about.russian": "Русская версия",
+    "about.source": "Source code on GitHub",
+    "about.disclaimer": "Unofficial community tool. Not affiliated with Behringer or Music Tribe.",
     "status.saving": "Saving…",
     "status.saved": "Saved in browser",
     "calibration.label": "50 mm · print at 100% / Actual size",
@@ -194,6 +202,14 @@ const TRANSLATIONS = {
     "geometry.summary": "{width} × {height} мм · канал {channel} мм · разрыв групп {gap} мм",
     "preview.heading": "Лист A4 · альбомный",
     "preview.description": "{model} · наклейка {width} × {height} мм · печатать без масштабирования",
+    "about.heading": "Печатные подписи для персональных микшеров Behringer P16",
+    "about.intro": "Создайте полосу подписей каналов размером 227 × 18 мм для персональных мониторных микшеров Behringer P16-M и P16-HQ. Добавьте названия, мелкие подписи, иконки и цвета, затем скачайте SVG или напечатайте до восьми полос на одном листе A4.",
+    "about.stepOne": "Выберите канал и введите его название.",
+    "about.stepTwo": "Выберите иконку, цвет и композицию.",
+    "about.stepThree": "Печатайте в масштабе 100% / Actual size и проверьте линейку 50 мм.",
+    "about.russian": "Русская версия",
+    "about.source": "Исходный код на GitHub",
+    "about.disclaimer": "Неофициальный инструмент сообщества. Не связан с Behringer или Music Tribe.",
     "status.saving": "Сохраняю…",
     "status.saved": "Сохранено в браузере",
     "calibration.label": "50 мм · печать 100% / Actual size",
@@ -291,6 +307,7 @@ const svgEl = (tag, attrs = {}) => {
 };
 
 function loadLanguage() {
+  if (document.documentElement.dataset.pageLanguage === "ru") return "ru";
   try {
     return localStorage.getItem(LANGUAGE_KEY) === "ru" ? "ru" : "en";
   } catch (error) {
