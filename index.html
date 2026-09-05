@@ -1,117 +1,122 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>P16 Label Desk</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260905-1">
 </head>
 <body>
   <header class="topbar">
     <div class="brand" aria-label="P16 Label Desk">
       <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      <span><strong>P16 Label Desk</strong><small>конструктор полос 228 × 18 мм</small></span>
+      <span><strong>P16 Label Desk</strong><small id="brandSubtitle">227 × 18 mm label strip designer</small></span>
     </div>
     <div class="top-actions">
-      <button class="button ghost" id="exportJson" type="button">Проект JSON</button>
-      <label class="button ghost file-button" for="importJson">Открыть JSON</label>
+      <div class="language-switcher" role="group" aria-label="Interface language" data-i18n-aria-label="language.label">
+        <button type="button" data-language="en" aria-pressed="true">EN</button>
+        <button type="button" data-language="ru" aria-pressed="false">RU</button>
+      </div>
+      <button class="button ghost" id="exportJson" type="button" data-i18n="actions.saveProject">Save project</button>
+      <label class="button ghost file-button" for="importJson" data-i18n="actions.openProject">Open project</label>
       <input id="importJson" type="file" accept="application/json,.json" hidden>
-      <button class="button ghost" id="downloadSvg" type="button">Скачать SVG</button>
-      <button class="button primary" id="printSheet" type="button">Печатать A4</button>
+      <button class="button ghost" id="downloadSvg" type="button" data-i18n="actions.downloadSvg">Download SVG</button>
+      <button class="button primary" id="printSheet" type="button" data-i18n="actions.printA4">Print A4</button>
     </div>
   </header>
 
   <main class="workspace">
-    <aside class="editor" aria-label="Редактор подписей">
+    <aside class="editor" aria-label="Label editor" data-i18n-aria-label="aria.editor">
       <section class="editor-section channel-section">
         <div class="section-heading">
           <div>
-            <h1>Каналы</h1>
-            <p>Нажмите канал на полосе или здесь.</p>
+            <h1 data-i18n="channels.heading">Channels</h1>
+            <p data-i18n="channels.hint">Select a channel here or on the strip.</p>
           </div>
-          <button class="icon-button" id="resetProject" type="button" title="Вернуть исходную раскладку" aria-label="Вернуть исходную раскладку">↺</button>
+          <button class="icon-button" id="resetProject" type="button" title="Reset to the default layout" aria-label="Reset to the default layout" data-i18n-title="actions.reset" data-i18n-aria-label="actions.reset">↺</button>
         </div>
-        <div class="channel-grid" id="channelGrid" aria-label="Выбор канала"></div>
+        <div class="channel-grid" id="channelGrid" aria-label="Channel selection" data-i18n-aria-label="aria.channelSelection"></div>
       </section>
 
       <section class="editor-section selected-section">
         <div class="selected-heading">
           <span class="channel-badge" id="selectedNumber">1</span>
-          <div><h2 id="selectedTitle">VOC1</h2><p id="selectedRange">Канал 1</p></div>
+          <div><h2 id="selectedTitle">VOC1</h2><p id="selectedRange">Channel 1</p></div>
         </div>
 
         <div class="form-grid">
           <label class="field field-wide">
-            <span>Название</span>
+            <span data-i18n="fields.name">Name</span>
             <input id="channelName" data-testid="channel-name" type="text" maxlength="24" autocomplete="off">
           </label>
           <label class="field field-wide">
-            <span>Подпись мелким</span>
-            <input id="channelSubtitle" type="text" maxlength="32" placeholder="необязательно" autocomplete="off">
+            <span data-i18n="fields.subtitle">Small caption</span>
+            <input id="channelSubtitle" type="text" maxlength="32" placeholder="optional" data-i18n-placeholder="fields.optional" autocomplete="off">
           </label>
           <label class="field">
-            <span>Ширина</span>
+            <span data-i18n="fields.width">Width</span>
             <select id="channelSpan">
-              <option value="1">1 канал</option>
-              <option value="2">2 канала</option>
+              <option value="1" data-i18n="span.one">1 channel</option>
+              <option value="2" data-i18n="span.two">2 channels</option>
             </select>
           </label>
           <label class="field">
-            <span>Композиция</span>
+            <span data-i18n="fields.layout">Layout</span>
             <select id="channelLayout">
-              <option value="stack">Иконка сверху</option>
-              <option value="left">Иконка слева</option>
-              <option value="text">Только текст</option>
-              <option value="icon">Только иконка</option>
+              <option value="stack" data-i18n="layout.stack">Icon above</option>
+              <option value="left" data-i18n="layout.left">Icon on the left</option>
+              <option value="text" data-i18n="layout.text">Text only</option>
+              <option value="icon" data-i18n="layout.icon">Icon only</option>
             </select>
           </label>
           <label class="field">
-            <span>Заливка</span>
+            <span data-i18n="fields.fill">Fill</span>
             <select id="channelFill">
-              <option value="top">Полоса сверху</option>
-              <option value="bottom">Полоса снизу</option>
-              <option value="full">Целиком</option>
-              <option value="soft">Лёгкий фон</option>
-              <option value="outline">Цветная рамка</option>
-              <option value="icon">Только иконка</option>
+              <option value="top" data-i18n="fill.top">Top bar</option>
+              <option value="bottom" data-i18n="fill.bottom">Bottom bar</option>
+              <option value="full" data-i18n="fill.full">Full</option>
+              <option value="soft" data-i18n="fill.soft">Soft background</option>
+              <option value="outline" data-i18n="fill.outline">Colored outline</option>
+              <option value="icon" data-i18n="fill.icon">Icon only</option>
             </select>
           </label>
           <label class="field">
-            <span>Текст</span>
+            <span data-i18n="fields.text">Text</span>
             <select id="channelTextColor">
-              <option value="auto">Автоконтраст</option>
-              <option value="dark">Тёмный</option>
-              <option value="light">Белый</option>
-              <option value="color">В цвет иконки</option>
+              <option value="auto" data-i18n="text.auto">Auto contrast</option>
+              <option value="dark" data-i18n="text.dark">Dark</option>
+              <option value="light" data-i18n="text.light">White</option>
+              <option value="color" data-i18n="text.color">Match icon color</option>
             </select>
           </label>
         </div>
 
         <div class="color-row">
-          <label class="color-field"><span>Цвет</span><input id="channelColor" type="color"></label>
-          <div class="swatches" id="colorSwatches" aria-label="Готовые цвета"></div>
+          <label class="color-field"><span data-i18n="fields.color">Color</span><input id="channelColor" type="color"></label>
+          <div class="swatches" id="colorSwatches" aria-label="Color presets" data-i18n-aria-label="aria.colorPresets"></div>
         </div>
 
         <div class="icon-editor">
-          <div class="field-label-row"><span>Иконка</span><button id="removeIcon" class="text-button" type="button">Убрать</button></div>
-          <div class="icon-grid" id="builtinIcons" aria-label="Рекомендуемые иконки"></div>
+          <div class="field-label-row"><span data-i18n="fields.icon">Icon</span><button id="removeIcon" class="text-button" type="button" data-i18n="actions.remove">Remove</button></div>
+          <div class="icon-grid" id="builtinIcons" aria-label="Recommended icons" data-i18n-aria-label="aria.recommendedIcons"></div>
           <form class="icon-search" id="iconSearchForm">
-            <input id="iconSearch" type="search" placeholder="Поиск по Iconify: drums, choir…" autocomplete="off">
-            <button class="button small" type="submit">Найти</button>
+            <input id="iconSearch" type="search" placeholder="Search Iconify: drums, choir…" data-i18n-placeholder="icons.searchPlaceholder" autocomplete="off">
+            <button class="button small" type="submit" data-i18n="actions.search">Search</button>
           </form>
-          <p class="search-status" id="searchStatus">Встроенные иконки работают без интернета.</p>
+          <p class="search-status" id="searchStatus" data-default-status="true">Built-in icons work offline.</p>
           <div class="icon-grid search-results" id="iconResults" aria-live="polite"></div>
         </div>
 
-        <button class="button danger-quiet" id="clearChannel" type="button">Очистить выбранный канал</button>
+        <button class="button danger-quiet" id="clearChannel" type="button" data-i18n="actions.clearChannel">Clear selected channel</button>
       </section>
 
       <section class="editor-section global-section">
-        <div class="section-heading"><div><h2>Весь лист</h2><p>Общие параметры всех подписей.</p></div></div>
+        <div class="section-heading"><div><h2 data-i18n="sheet.heading">Whole sheet</h2><p data-i18n="sheet.hint">Settings shared by all labels.</p></div></div>
         <div class="form-grid">
+          <p class="geometry-note field-wide" id="geometrySummary">227 × 18 mm · channel 12.5 mm · group gap 3 mm</p>
           <label class="field">
-            <span>Шрифт</span>
+            <span data-i18n="fields.font">Font</span>
             <select id="fontFamily">
               <option value="narrow">Arial Narrow</option>
               <option value="neutral">Arial</option>
@@ -122,43 +127,43 @@
             </select>
           </label>
           <label class="field">
-            <span>Копий на A4</span>
+            <span data-i18n="fields.copies">Copies on A4</span>
             <select id="copies">
               <option>1</option><option>2</option><option>3</option><option>4</option>
               <option>5</option><option>6</option><option>7</option><option selected>8</option>
             </select>
           </label>
           <label class="field field-wide range-field">
-            <span>Размер названия <output id="titleSizeValue">2.55 мм</output></span>
+            <span><span data-i18n="fields.titleSize">Name size</span> <output id="titleSizeValue">2.55 mm</output></span>
             <input id="titleSize" type="range" min="1.8" max="3.6" step="0.05" value="2.55">
           </label>
           <label class="field field-wide range-field">
-            <span>Размер иконки <output id="iconSizeValue">8.2 мм</output></span>
+            <span><span data-i18n="fields.iconSize">Icon size</span> <output id="iconSizeValue">8.2 mm</output></span>
             <input id="iconSize" type="range" min="5" max="10.5" step="0.1" value="8.2">
           </label>
         </div>
         <div class="switch-list">
-          <label class="switch"><input id="uppercase" type="checkbox" checked><span></span>Название прописными</label>
-          <label class="switch"><input id="showCalibration" type="checkbox" checked><span></span>Линейка 50 мм</label>
+          <label class="switch"><input id="uppercase" type="checkbox" checked><span class="switch-track"></span><span class="switch-copy" data-i18n="fields.uppercase">Uppercase name</span></label>
+          <label class="switch"><input id="showCalibration" type="checkbox" checked><span class="switch-track"></span><span class="switch-copy" data-i18n="fields.calibration">50 mm calibration ruler</span></label>
         </div>
       </section>
     </aside>
 
-    <section class="canvas" aria-label="Предпросмотр печати">
+    <section class="canvas" aria-label="Print preview" data-i18n-aria-label="aria.printPreview">
       <div class="canvas-toolbar">
         <div>
-          <strong>Лист A4 · альбомный</strong>
-          <span>Наклейка 228 × 18 мм · печатать без масштабирования</span>
+          <strong data-i18n="preview.heading">A4 sheet · landscape</strong>
+          <span id="stripDescription">P16-HQ / P16-M · 227 × 18 mm label · print at actual size</span>
         </div>
-        <div class="save-state" id="saveState"><span></span>Сохранено в браузере</div>
+        <div class="save-state" id="saveState"><span class="save-dot"></span><span id="saveStateText">Saved in browser</span></div>
       </div>
       <div class="sheet-stage">
-        <div class="sheet" id="printSheetPreview" aria-label="Лист A4 с полосами"></div>
+        <div class="sheet" id="printSheetPreview" aria-label="A4 sheet with label strips" data-i18n-aria-label="aria.printSheet"></div>
       </div>
     </section>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js"></script>
+  <script src="app.js?v=20260905-1"></script>
 </body>
 </html>

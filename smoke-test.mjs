@@ -1,5 +1,7 @@
-const targets = await fetch("http://127.0.0.1:9223/json/list").then(response => response.json());
-const target = targets.find(item => item.type === "page" && item.url === "http://127.0.0.1:8765/");
+const appUrl = process.env.P16_TEST_URL || "http://127.0.0.1:8765/";
+const debuggingUrl = process.env.P16_CDP_URL || "http://127.0.0.1:9223";
+const targets = await fetch(`${debuggingUrl}/json/list`).then(response => response.json());
+const target = targets.find(item => item.type === "page" && item.url === appUrl);
 if (!target?.webSocketDebuggerUrl) throw new Error("Chrome debugging target was not found");
 
 const socket = new WebSocket(target.webSocketDebuggerUrl);
@@ -35,20 +37,90 @@ async function evaluate(expression, awaitPromise = false) {
 }
 
 await command("Runtime.enable");
+await command("Emulation.setDeviceMetricsOverride", { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false });
+
+await evaluate(`(() => {
+  localStorage.removeItem('p16-label-desk-language');
+  location.reload();
+  return true;
+})()`);
+await new Promise(resolve => setTimeout(resolve, 500));
 
 const initial = await evaluate(`({
   title: document.title,
+  language: document.documentElement.lang,
+  saveProject: document.querySelector('#exportJson').textContent,
+  openProject: document.querySelector('label[for="importJson"]').textContent,
+  versionedAssets: document.querySelector('script[src*="?v="]') !== null && document.querySelector('link[href*="?v="]') !== null,
   strips: document.querySelectorAll('.strip-cut').length,
   svgLabels: document.querySelectorAll('.label-strip').length,
   selected: document.querySelector('#channelName').value,
+  hasGeometryChoice: Boolean(document.querySelector('#consoleModel')),
   builtinIcons: document.querySelectorAll('#builtinIcons .icon-choice').length,
-  sheetSize: [getComputedStyle(document.querySelector('.sheet')).width, getComputedStyle(document.querySelector('.sheet')).height]
+  sheetSize: [getComputedStyle(document.querySelector('.sheet')).width, getComputedStyle(document.querySelector('.sheet')).height],
+  strip: (() => {
+    const svg = document.querySelector('.label-strip');
+    const crop = document.querySelector('.crop-layer');
+    const frames = svg.querySelectorAll('.label-frame');
+    return {
+      width: svg.getAttribute('width'),
+      viewBox: svg.getAttribute('viewBox'),
+      geometry: svg.dataset.geometry,
+      cropWidth: crop.getAttribute('width'),
+      cropViewBox: crop.getAttribute('viewBox'),
+      cropPath: crop.querySelector('path').getAttribute('d'),
+      first: [frames[0].getAttribute('x'), frames[0].getAttribute('width')],
+      fifth: [svg.querySelector('[data-channel="4"] .label-frame').getAttribute('x'), svg.querySelector('[data-channel="4"] .label-frame').getAttribute('width')],
+      last: [frames[frames.length - 1].getAttribute('x'), frames[frames.length - 1].getAttribute('width')]
+    };
+  })()
 })`);
 
 if (initial.title !== "P16 Label Desk") throw new Error("Unexpected page title");
+if (initial.language !== "en" || initial.saveProject !== "Save project" || initial.openProject !== "Open project") throw new Error("English is not the default interface language");
+if (!initial.versionedAssets) throw new Error("Local assets are not cache-busted");
 if (initial.strips !== 8 || initial.svgLabels !== 8) throw new Error("A4 preview must contain eight strips");
 if (initial.selected !== "VOC1") throw new Error("Default project did not load");
+if (initial.hasGeometryChoice) throw new Error("Obsolete geometry selector is still visible");
 if (initial.builtinIcons < 8) throw new Error("Built-in icon library is incomplete");
+if (initial.strip.width !== "227mm" || initial.strip.viewBox !== "0 0 227 18") throw new Error("Measured strip size is incorrect");
+if (initial.strip.geometry !== "measured") throw new Error("Measured geometry is not the default");
+if (initial.strip.cropWidth !== "231mm" || initial.strip.cropViewBox !== "0 0 231 22" || !initial.strip.cropPath.includes("M229 0V2")) throw new Error("Crop marks do not match the strip size");
+if (initial.strip.first.join(",") !== "9,12.5" || initial.strip.fifth.join(",") !== "62,25" || initial.strip.last.join(",") !== "193,25") throw new Error("Measured channel geometry is incorrect");
+
+const russian = await evaluate(`(() => {
+  document.querySelector('[data-language="ru"]').click();
+  return {
+    language: document.documentElement.lang,
+    saveProject: document.querySelector('#exportJson').textContent,
+    openProject: document.querySelector('label[for="importJson"]').textContent,
+    channels: document.querySelector('.channel-section h1').textContent,
+    selectedRange: document.querySelector('#selectedRange').textContent,
+    stored: localStorage.getItem('p16-label-desk-language'),
+    headerFits: document.querySelector('.topbar').scrollWidth <= document.querySelector('.topbar').clientWidth
+  };
+})()`);
+if (russian.language !== "ru" || russian.saveProject !== "Сохранить проект" || russian.openProject !== "Открыть проект" || russian.channels !== "Каналы" || russian.selectedRange !== "Канал 1" || russian.stored !== "ru" || !russian.headerFits) throw new Error("Russian localization failed");
+
+await evaluate(`(() => { location.reload(); return true; })()`);
+await new Promise(resolve => setTimeout(resolve, 500));
+const persistedLanguage = await evaluate(`({
+  language: document.documentElement.lang,
+  saveProject: document.querySelector('#exportJson').textContent,
+  active: document.querySelector('[data-language="ru"]').getAttribute('aria-pressed')
+})`);
+if (persistedLanguage.language !== "ru" || persistedLanguage.saveProject !== "Сохранить проект" || persistedLanguage.active !== "true") throw new Error("Language preference was not restored after reload");
+
+const english = await evaluate(`(() => {
+  document.querySelector('[data-language="en"]').click();
+  return {
+    language: document.documentElement.lang,
+    channels: document.querySelector('.channel-section h1').textContent,
+    selectedRange: document.querySelector('#selectedRange').textContent,
+    stored: localStorage.getItem('p16-label-desk-language')
+  };
+})()`);
+if (english.language !== "en" || english.channels !== "Channels" || english.selectedRange !== "Channel 1" || english.stored !== "en") throw new Error("English localization failed");
 
 const interaction = await evaluate(`(() => {
   document.querySelector('[data-testid="channel-5"]').click();
@@ -73,6 +145,23 @@ if (interaction.selectedNumber !== "5" || !interaction.selectedRange.includes("5
 if (interaction.frameFill.toLowerCase() !== "#dca600") throw new Error("Full fill style failed");
 if (!interaction.text.includes("GTR TEST") || !interaction.exported) throw new Error("Text update or SVG export failed");
 
+const importedProject = await evaluate(`(async () => {
+  const project = JSON.parse(JSON.stringify(state));
+  project.channels[0].name = 'IMPORTED';
+  const transfer = new DataTransfer();
+  transfer.items.add(new File([JSON.stringify(project)], 'test-project.json', { type: 'application/json' }));
+  const input = document.querySelector('#importJson');
+  input.files = transfer.files;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  await new Promise(resolve => setTimeout(resolve, 80));
+  return {
+    name: document.querySelector('#channelName').value,
+    title: document.querySelector('#selectedTitle').textContent,
+    toast: document.querySelector('#toast').textContent
+  };
+})()`, true);
+if (importedProject.name !== "IMPORTED" || importedProject.title !== "IMPORTED" || importedProject.toast !== "Project opened") throw new Error("Project import failed");
+
 await evaluate(`(() => {
   document.querySelector('#iconSearch').value = 'drum kit';
   document.querySelector('#iconSearchForm').requestSubmit();
@@ -87,9 +176,12 @@ if (search.results < 1) throw new Error(`Iconify search failed: ${search.status}
 await command("Emulation.setEmulatedMedia", { media: "print" });
 const print = await evaluate(`({
   topbar: getComputedStyle(document.querySelector('.topbar')).display,
-  sheetZoom: getComputedStyle(document.querySelector('.sheet')).zoom
+  sheetDisplay: getComputedStyle(document.querySelector('.sheet')).display,
+  sheetOverflow: getComputedStyle(document.querySelector('.sheet')).overflow,
+  sheetZoom: getComputedStyle(document.querySelector('.sheet')).zoom,
+  stripMarginBottom: getComputedStyle(document.querySelector('.strip-cut')).marginBottom
 })`);
-if (print.topbar !== "none" || Number(print.sheetZoom) !== 1) throw new Error("Print stylesheet failed");
+if (print.topbar !== "none" || print.sheetDisplay !== "block" || print.sheetOverflow !== "hidden" || Number(print.sheetZoom) !== 1 || print.stripMarginBottom === "0px") throw new Error("Print stylesheet failed");
 
-console.log(JSON.stringify({ initial, interaction, search, print }, null, 2));
+console.log(JSON.stringify({ initial, russian, persistedLanguage, english, interaction, importedProject, search, print }, null, 2));
 socket.close();
