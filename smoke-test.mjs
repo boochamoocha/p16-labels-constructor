@@ -66,6 +66,7 @@ await command("Emulation.setDeviceMetricsOverride", { width: 1600, height: 1000,
 
 await evaluate(`(() => {
   localStorage.removeItem('p16-label-desk-language');
+  localStorage.removeItem('p16-label-desk-project-v1');
   location.reload();
   return true;
 })()`);
