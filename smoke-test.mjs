@@ -84,6 +84,7 @@ const initial = await evaluate(`({
   hasGeometryChoice: Boolean(document.querySelector('#consoleModel')),
   builtinIcons: document.querySelectorAll('#builtinIcons .icon-choice').length,
   sheetSize: [getComputedStyle(document.querySelector('.sheet')).width, getComputedStyle(document.querySelector('.sheet')).height],
+  sheetZoom: getComputedStyle(document.querySelector('.sheet')).zoom,
   canonical: document.querySelector('link[rel="canonical"]').href,
   description: document.querySelector('meta[name="description"]').content,
   about: document.querySelector('#aboutHeading').textContent,
@@ -100,7 +101,9 @@ const initial = await evaluate(`({
       cropPath: crop.querySelector('path').getAttribute('d'),
       first: [frames[0].getAttribute('x'), frames[0].getAttribute('width')],
       fifth: [svg.querySelector('[data-channel="4"] .label-frame').getAttribute('x'), svg.querySelector('[data-channel="4"] .label-frame').getAttribute('width')],
-      last: [frames[frames.length - 1].getAttribute('x'), frames[frames.length - 1].getAttribute('width')]
+      last: [frames[frames.length - 1].getAttribute('x'), frames[frames.length - 1].getAttribute('width')],
+      calibrationWidth: document.querySelector('.calibration-ruler').getAttribute('width'),
+      calibrationMarks: Array.from(document.querySelectorAll('.calibration-ruler text')).slice(1).map(node => node.textContent)
     };
   })()
 })`);
@@ -117,6 +120,8 @@ if (initial.strip.width !== "227mm" || initial.strip.viewBox !== "0 0 227 18") t
 if (initial.strip.geometry !== "measured") throw new Error("Measured geometry is not the default");
 if (initial.strip.cropWidth !== "231mm" || initial.strip.cropViewBox !== "0 0 231 22" || !initial.strip.cropPath.includes("M229 0V2")) throw new Error("Crop marks do not match the strip size");
 if (initial.strip.first.join(",") !== "9,12.5" || initial.strip.fifth.join(",") !== "62,25" || initial.strip.last.join(",") !== "193,25") throw new Error("Measured channel geometry is incorrect");
+if (Number(initial.sheetZoom) !== .72) throw new Error("Screen preview scale is incorrect");
+if (initial.strip.calibrationWidth !== "227mm" || initial.strip.calibrationMarks.join(",") !== "0 mm,50 mm,100 mm,200 mm,227 mm") throw new Error("Calibration ruler is incorrect");
 
 const russian = await evaluate(`(() => {
   document.querySelector('[data-language="ru"]').click();

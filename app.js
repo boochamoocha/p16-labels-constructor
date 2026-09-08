@@ -64,7 +64,7 @@ const TRANSLATIONS = {
     "fields.titleSize": "Name size",
     "fields.iconSize": "Icon size",
     "fields.uppercase": "Uppercase name",
-    "fields.calibration": "50 mm calibration ruler",
+    "fields.calibration": "227 mm calibration ruler",
     "span.one": "1 channel",
     "span.two": "2 channels",
     "layout.stack": "Icon above",
@@ -108,13 +108,13 @@ const TRANSLATIONS = {
     "about.intro": "Create a 227 × 18 mm channel label strip for Behringer P16-M and P16-HQ personal monitor mixers. Add names, captions, icons and colors, then export SVG or print up to eight strips on one A4 sheet.",
     "about.stepOne": "Choose a channel and enter its name.",
     "about.stepTwo": "Pick an icon, color and layout.",
-    "about.stepThree": "Print at 100% / Actual size and verify the 50 mm ruler.",
+    "about.stepThree": "Print at 100% / Actual size and verify the 50, 100, 200 and 227 mm marks.",
     "about.russian": "Русская версия",
     "about.source": "Source code on GitHub",
     "about.disclaimer": "Unofficial community tool. Not affiliated with Behringer or Music Tribe.",
     "status.saving": "Saving…",
     "status.saved": "Saved in browser",
-    "calibration.label": "50 mm · print at 100% / Actual size",
+    "calibration.label": "Calibration ruler · print at 100% / Actual size",
     "confirm.clear": "Clear channel {number}?",
     "confirm.reset": "Reset to the default layout? Your current changes will be replaced.",
     "toast.reset": "Default layout restored",
@@ -162,7 +162,7 @@ const TRANSLATIONS = {
     "fields.titleSize": "Размер названия",
     "fields.iconSize": "Размер иконки",
     "fields.uppercase": "Название прописными",
-    "fields.calibration": "Линейка 50 мм",
+    "fields.calibration": "Контрольная линейка 227 мм",
     "span.one": "1 канал",
     "span.two": "2 канала",
     "layout.stack": "Иконка сверху",
@@ -206,13 +206,13 @@ const TRANSLATIONS = {
     "about.intro": "Создайте полосу подписей каналов размером 227 × 18 мм для персональных мониторных микшеров Behringer P16-M и P16-HQ. Добавьте названия, мелкие подписи, иконки и цвета, затем скачайте SVG или напечатайте до восьми полос на одном листе A4.",
     "about.stepOne": "Выберите канал и введите его название.",
     "about.stepTwo": "Выберите иконку, цвет и композицию.",
-    "about.stepThree": "Печатайте в масштабе 100% / Actual size и проверьте линейку 50 мм.",
+    "about.stepThree": "Печатайте в масштабе 100% / Actual size и проверьте отметки 50, 100, 200 и 227 мм.",
     "about.russian": "Русская версия",
     "about.source": "Исходный код на GitHub",
     "about.disclaimer": "Неофициальный инструмент сообщества. Не связан с Behringer или Music Tribe.",
     "status.saving": "Сохраняю…",
     "status.saved": "Сохранено в браузере",
-    "calibration.label": "50 мм · печать 100% / Actual size",
+    "calibration.label": "Контрольная линейка · печать 100% / Actual size",
     "confirm.clear": "Очистить канал {number}?",
     "confirm.reset": "Вернуть исходную раскладку? Текущие изменения будут заменены.",
     "toast.reset": "Исходная раскладка восстановлена",
@@ -565,6 +565,38 @@ function buildCropSvg() {
   return root;
 }
 
+function buildCalibrationSvg() {
+  const width = PRINT_GEOMETRY.stripWidth;
+  const marks = [0, 50, 100, 200, width];
+  const root = svgEl("svg", {
+    class: "calibration-ruler",
+    width: `${width}mm`,
+    height: "9mm",
+    viewBox: `0 0 ${width} 9`,
+    role: "img",
+    "aria-label": t("calibration.label")
+  });
+  root.append(
+    svgEl("text", { x: width / 2, y: 1.9, "text-anchor": "middle", "font-family": "Arial, sans-serif", "font-size": 2.1, fill: "#222222" }),
+    svgEl("line", { x1: 0, y1: 4, x2: width, y2: 4, stroke: "#222222", "stroke-width": .25 })
+  );
+  root.firstChild.textContent = t("calibration.label");
+  marks.forEach((mark, index) => {
+    root.append(svgEl("line", { x1: mark, y1: 2.7, x2: mark, y2: 5.7, stroke: "#222222", "stroke-width": .25 }));
+    const label = svgEl("text", {
+      x: mark,
+      y: 8.2,
+      "text-anchor": index === 0 ? "start" : index === marks.length - 1 ? "end" : "middle",
+      "font-family": "Arial, sans-serif",
+      "font-size": 2.1,
+      fill: "#222222"
+    });
+    label.textContent = `${mark} mm`;
+    root.append(label);
+  });
+  return root;
+}
+
 function renderSheet() {
   const sheet = $("#printSheetPreview");
   sheet.replaceChildren();
@@ -581,7 +613,7 @@ function renderSheet() {
   }
   if (state.settings.showCalibration) {
     const calibration = el("div", "calibration");
-    calibration.append(el("span", "calibration-line"), Object.assign(el("span"), { textContent: t("calibration.label") }));
+    calibration.append(buildCalibrationSvg());
     sheet.append(calibration);
   }
 }

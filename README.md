@@ -17,13 +17,13 @@ No account, backend or installation is required. Projects are stored locally in 
 - top bar, bottom bar, full fill, soft background and outline styles;
 - automatic text contrast, several fonts and adjustable sizes;
 - SVG export and project import/export in JSON;
-- up to eight strips per A4 sheet with crop marks and a 50 mm calibration ruler;
+- up to eight strips per A4 sheet with crop marks and a 227 mm calibration ruler;
 - English and Russian interface;
 - automatic deployment to Cloudflare Pages from `main`.
 
 ## Printing
 
-Select **100% / Actual size** in the system print dialog and disable **Fit to page**. The calibration ruler on paper must measure exactly 50 mm.
+Select **100% / Actual size** in the system print dialog and disable **Fit to page**. The ruler includes marks at 50, 100, 200 and 227 mm; each one must measure exactly from the zero mark.
 
 ## Run locally
 
@@ -42,7 +42,7 @@ Then open <http://127.0.0.1:8765/>.
 
 P16 Label Desk — бесплатный конструктор печатных полос подписей каналов для персональных мониторных микшеров Behringer P16-M и P16-HQ. Можно настроить названия, иконки, цвета и стереопары, скачать SVG или напечатать до восьми полос на листе A4.
 
-При печати выберите масштаб **100% / Actual size** и отключите **Fit to page**. Контрольная линейка должна иметь длину ровно 50 мм.
+При печати выберите масштаб **100% / Actual size** и отключите **Fit to page**. На контрольной линейке есть отметки 50, 100, 200 и 227 мм — каждая должна находиться на соответствующем расстоянии от нулевой отметки.
 
 ## Icons and licenses
 
