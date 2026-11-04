@@ -55,6 +55,7 @@ const TRANSLATIONS = {
     "fields.optional": "optional",
     "fields.width": "Width",
     "fields.layout": "Layout",
+    "fields.orientation": "Text direction",
     "fields.fill": "Fill",
     "fields.text": "Text",
     "fields.color": "Color",
@@ -71,6 +72,9 @@ const TRANSLATIONS = {
     "layout.left": "Icon on the left",
     "layout.text": "Text only",
     "layout.icon": "Icon only",
+    "orientation.horizontal": "Horizontal",
+    "orientation.vertical": "Vertical · top to bottom",
+    "orientation.verticalReverse": "Vertical · bottom to top",
     "fill.top": "Top bar",
     "fill.bottom": "Bottom bar",
     "fill.full": "Full",
@@ -153,6 +157,7 @@ const TRANSLATIONS = {
     "fields.optional": "необязательно",
     "fields.width": "Ширина",
     "fields.layout": "Композиция",
+    "fields.orientation": "Направление текста",
     "fields.fill": "Заливка",
     "fields.text": "Текст",
     "fields.color": "Цвет",
@@ -169,6 +174,9 @@ const TRANSLATIONS = {
     "layout.left": "Иконка слева",
     "layout.text": "Только текст",
     "layout.icon": "Только иконка",
+    "orientation.horizontal": "Горизонтально",
+    "orientation.vertical": "Вертикально · сверху вниз",
+    "orientation.verticalReverse": "Вертикально · снизу вверх",
     "fill.top": "Полоса сверху",
     "fill.bottom": "Полоса снизу",
     "fill.full": "Целиком",
@@ -263,7 +271,7 @@ const BUILTIN_ICONS = {
 
 const defaultChannel = () => ({
   name: "", subtitle: "", icon: "", color: "#54606e",
-  fill: "top", layout: "stack", textColor: "auto", span: 1
+  fill: "top", layout: "stack", orientation: "horizontal", textColor: "auto", span: 1
 });
 
 function makeDefaultState() {
@@ -441,14 +449,16 @@ function labelColors(channel) {
 
 function appendRect(parent, attrs) { parent.append(svgEl("rect", attrs)); }
 
-function appendLabelText(group, value, x, y, width, baseSize, color, anchor = "middle", weight = 800) {
+function appendLabelText(group, value, x, y, width, baseSize, color, anchor = "middle", weight = 800, rotation = 0) {
   if (!value) return;
   const shown = state.settings.uppercase ? value.toLocaleUpperCase(currentLanguage === "ru" ? "ru-RU" : "en-US") : value;
   const familyFactor = state.settings.font === "narrow" || state.settings.font === "display" ? .48 : .56;
   const fitted = Math.max(1.35, Math.min(baseSize, (width - .9) / Math.max(1, shown.length * familyFactor)));
   const text = svgEl("text", {
     x, y, fill: color, "font-size": fitted, "font-family": FONT_MAP[state.settings.font],
-    "font-weight": weight, "text-anchor": anchor, "dominant-baseline": "auto"
+    "font-weight": weight, "text-anchor": anchor,
+    "dominant-baseline": rotation ? "middle" : "auto",
+    ...(rotation ? { transform: `rotate(${rotation} ${x} ${y})` } : {})
   });
   text.textContent = shown;
   group.append(text);
@@ -485,6 +495,22 @@ function renderLabel(group, channel, x, width) {
   if (channel.layout === "icon") {
     const size = Math.min(11.1, width - 2, 14.2);
     appendIcon(group, channel, center - size / 2, 3.25, size, 11.1, icon);
+    return;
+  }
+
+  if (channel.orientation === "vertical" || channel.orientation === "vertical-reverse") {
+    const rotation = channel.orientation === "vertical-reverse" ? -90 : 90;
+    const hasIcon = channel.layout !== "text" && Boolean(getIcon(channel.icon));
+    const sideIconSize = Math.min(Number(state.settings.iconSize) * .6, width * .33, 6.3);
+    if (hasIcon) appendIcon(group, channel, x + 1, 9 - sideIconSize / 2, sideIconSize, sideIconSize, icon);
+    const textLeft = x + (hasIcon ? sideIconSize + 1.8 : 1);
+    const textCenter = (textLeft + x + width - 1) / 2;
+    const textY = 9;
+    const textLength = 15.4;
+    appendLabelText(group, title, textCenter - (subtitle ? 1.1 : 0), textY, textLength,
+      Number(state.settings.titleSize), text, "middle", 800, rotation);
+    appendLabelText(group, subtitle, textCenter + 1.55, textY, textLength,
+      1.45, text, "middle", 500, rotation);
     return;
   }
 
@@ -682,6 +708,7 @@ function syncEditor() {
   $("#channelSpan").value = String(span);
   $("#channelSpan").disabled = selectedChannel % 4 === 3;
   $("#channelLayout").value = channel.layout;
+  $("#channelOrientation").value = channel.orientation;
   $("#channelFill").value = channel.fill;
   $("#channelTextColor").value = channel.textColor;
   $("#channelColor").value = channel.color;
@@ -814,6 +841,7 @@ bindChannelField("#channelName", "name", "input");
 bindChannelField("#channelSubtitle", "subtitle", "input");
 bindChannelField("#channelSpan", "span", "change", Number);
 bindChannelField("#channelLayout", "layout");
+bindChannelField("#channelOrientation", "orientation");
 bindChannelField("#channelFill", "fill");
 bindChannelField("#channelTextColor", "textColor");
 bindChannelField("#channelColor", "color", "input");

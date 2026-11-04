@@ -100,6 +100,14 @@
             </select>
           </label>
           <label class="field">
+            <span data-i18n="fields.orientation">Text direction</span>
+            <select id="channelOrientation">
+              <option value="horizontal" data-i18n="orientation.horizontal">Horizontal</option>
+              <option value="vertical" data-i18n="orientation.vertical">Vertical · top to bottom</option>
+              <option value="vertical-reverse" data-i18n="orientation.verticalReverse">Vertical · bottom to top</option>
+            </select>
+          </label>
+          <label class="field">
             <span data-i18n="fields.fill">Fill</span>
             <select id="channelFill">
               <option value="top" data-i18n="fill.top">Top bar</option>
@@ -208,6 +216,6 @@
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20260908-1"></script>
+  <script src="app.js?v=20261104-2"></script>
 </body>
 </html>

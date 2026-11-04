@@ -13,6 +13,7 @@ No account, backend or installation is required. Projects are stored locally in 
 - measured 227 × 18 mm geometry for P16-M and P16-HQ;
 - 16 channels with optional stereo pairs;
 - channel names and smaller captions;
+- horizontal text or vertical text in either direction for each channel;
 - built-in SVG icons plus Iconify search;
 - top bar, bottom bar, full fill, soft background and outline styles;
 - automatic text contrast, several fonts and adjustable sizes;

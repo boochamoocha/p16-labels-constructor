@@ -131,11 +131,13 @@ const russian = await evaluate(`(() => {
     openProject: document.querySelector('label[for="importJson"]').textContent,
     channels: document.querySelector('.channel-section h2').textContent,
     selectedRange: document.querySelector('#selectedRange').textContent,
+    verticalOption: document.querySelector('#channelOrientation option[value="vertical"]').textContent,
+    reverseOption: document.querySelector('#channelOrientation option[value="vertical-reverse"]').textContent,
     stored: localStorage.getItem('p16-label-desk-language'),
     headerFits: document.querySelector('.topbar').scrollWidth <= document.querySelector('.topbar').clientWidth
   };
 })()`);
-if (russian.language !== "ru" || russian.saveProject !== "Сохранить проект" || russian.openProject !== "Открыть проект" || russian.channels !== "Каналы" || russian.selectedRange !== "Канал 1" || russian.stored !== "ru" || !russian.headerFits) throw new Error("Russian localization failed");
+if (russian.language !== "ru" || russian.saveProject !== "Сохранить проект" || russian.openProject !== "Открыть проект" || russian.channels !== "Каналы" || russian.selectedRange !== "Канал 1" || russian.verticalOption !== "Вертикально · сверху вниз" || russian.reverseOption !== "Вертикально · снизу вверх" || russian.stored !== "ru" || !russian.headerFits) throw new Error("Russian localization failed");
 
 await evaluate(`(() => { location.reload(); return true; })()`);
 await new Promise(resolve => setTimeout(resolve, 500));
@@ -179,6 +181,55 @@ const interaction = await evaluate(`(() => {
 if (interaction.selectedNumber !== "5" || !interaction.selectedRange.includes("5–6")) throw new Error("Stereo channel selection failed");
 if (interaction.frameFill.toLowerCase() !== "#dca600") throw new Error("Full fill style failed");
 if (!interaction.text.includes("GTR TEST") || !interaction.exported) throw new Error("Text update or SVG export failed");
+
+const vertical = await evaluate(`(() => {
+  const direction = document.querySelector('#channelOrientation');
+  direction.value = 'vertical';
+  direction.dispatchEvent(new Event('change', { bubbles: true }));
+  const subtitle = document.querySelector('#channelSubtitle');
+  subtitle.value = 'DI';
+  subtitle.dispatchEvent(new Event('input', { bubbles: true }));
+  const label = document.querySelector('.label-strip [data-channel="4"]');
+  const texts = [...label.querySelectorAll('text')];
+  const exported = buildStripSvg(false).querySelector('[data-channel="4"] text');
+  const legacy = normalizeState({ channels: Array.from({ length: 16 }, () => ({})) });
+  return {
+    selected: direction.value,
+    stored: JSON.parse(localStorage.getItem('p16-label-desk-project-v1')).channels[4].orientation,
+    labels: texts.map(node => [node.textContent, node.getAttribute('transform')]),
+    exported: exported?.getAttribute('transform'),
+    legacy: legacy.channels[4].orientation
+  };
+})()`);
+if (vertical.selected !== "vertical" || vertical.stored !== "vertical" ||
+    vertical.labels.length !== 2 || vertical.labels.some(([, transform]) => !transform?.startsWith("rotate(90 ")) ||
+    !vertical.exported?.startsWith("rotate(90 ") || vertical.legacy !== "horizontal") {
+  throw new Error("Vertical text, subtitle, SVG export, or legacy project fallback failed");
+}
+
+const reverse = await evaluate(`(() => {
+  const direction = document.querySelector('#channelOrientation');
+  direction.value = 'vertical-reverse';
+  direction.dispatchEvent(new Event('change', { bubbles: true }));
+  const label = document.querySelector('.label-strip [data-channel="4"]');
+  return {
+    selected: direction.value,
+    stored: JSON.parse(localStorage.getItem('p16-label-desk-project-v1')).channels[4].orientation,
+    rotations: [...label.querySelectorAll('text')].map(node => node.getAttribute('transform')),
+    exported: buildStripSvg(false).querySelector('[data-channel="4"] text')?.getAttribute('transform')
+  };
+})()`);
+if (reverse.selected !== "vertical-reverse" || reverse.stored !== "vertical-reverse" ||
+    reverse.rotations.length !== 2 || reverse.rotations.some(transform => !transform?.startsWith("rotate(-90 ")) ||
+    !reverse.exported?.startsWith("rotate(-90 ")) {
+  throw new Error("Reverse vertical text, subtitle, or SVG export failed");
+}
+
+await evaluate(`(() => { location.reload(); return true; })()`);
+await new Promise(resolve => setTimeout(resolve, 500));
+await evaluate(`(() => { document.querySelector('[data-testid="channel-5"]').click(); return true; })()`);
+const restoredOrientation = await evaluate(`document.querySelector('#channelOrientation').value`);
+if (restoredOrientation !== "vertical-reverse") throw new Error("Reverse vertical text direction was not restored after reload");
 
 const importedProject = await evaluate(`(async () => {
   const project = JSON.parse(JSON.stringify(state));
@@ -233,5 +284,5 @@ if (russianPage.language !== "ru" || russianPage.pageLanguage !== "ru" || russia
 
 await command("Page.navigate", { url: appUrl });
 await new Promise(resolve => setTimeout(resolve, 500));
-console.log(JSON.stringify({ initial, russian, persistedLanguage, english, interaction, importedProject, search, print, russianPage }, null, 2));
+console.log(JSON.stringify({ initial, russian, persistedLanguage, english, interaction, vertical, reverse, restoredOrientation, importedProject, search, print, russianPage }, null, 2));
 socket.close();
